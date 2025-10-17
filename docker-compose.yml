@@ -41,6 +41,17 @@ services:
     networks:
       - microservices-net
 
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - 9090:8080
+    depends_on:
+      - student-db
+    networks:
+      - microservices-net
+
 networks:
   microservices-net:
     driver: bridge
