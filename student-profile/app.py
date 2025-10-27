@@ -35,6 +35,7 @@ import psycopg2                        # PostgreSQL client library
 import os
 import json
 import time
+import requests                        # allows the use of HTTP requests
 
 app = Flask(__name__)
 CORS(app)  # permit Cross-Origin requests from the frontend during development
@@ -65,6 +66,10 @@ for i in range(max_retries):
 else:
     # If we've retried max_retries times, raise an error and stop the service.
     raise Exception(f"Could not connect to the database after {max_retries} retries")
+
+COURSE_SERVICE_URL = os.getenv("COURSE_SERVICE_URL", "http://course-catalogue:5002/api/v1/courses")
+""" After Flask has been initialised, this line makes the address of the course-catalogue service
+configurable through Docker through the COURSE_SERVICE_URL environemnt variable """
 
 def get_connection():
     """
@@ -175,6 +180,14 @@ def add_student():
     Inserts a new row and returns the created resource with its new id (HTTP 201).
     """
     data = request.get_json() or {}
+    programme_id = data.get("programme_id") # For the course-catalogue database
+
+    # Validation for programme:
+    if programme_id:
+        reponse = requests.get(f"{COURSE_SERVICE_URL}/{programme_id}")
+        if response.status_code != 200:
+            return jsonify({"error": "Invalid programme_id"}), 400
+
 
     # Basic validation for required fields.
     if "name" not in data or "email" not in data:
