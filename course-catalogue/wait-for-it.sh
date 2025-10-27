@@ -16,3 +16,4 @@ done
 exec $cmd
 
 # This is a universal wait-for-it.sh file for use by each of the microservices in this system.
+

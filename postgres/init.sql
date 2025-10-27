@@ -44,20 +44,3 @@ INSERT INTO students (name, email, attendance) VALUES
 ('Michael Scott', 'michael.scott@example.com', '[]'),
 ('Rachel Green', 'rachel.green@example.com', '[]'),
 ('Stephen Thorpe', 'stephen.thorpe@example.com', '[]');
-
--- Eve L Tyler 19th Oct. 2025
-
--- Create a new administrative user
-CREATE USER admin WITH PASSWORD 'adminpassword';
-
--- Grant full access to the students database
-GRANT ALL PRIVILEGES ON DATABASE students TO admin;
-
--- Optional: grant privileges on existing tables and sequences
-\c students;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO admin;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO admin;
-
--- Ensure future tables/sequences also belong to admin
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO admin;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO admin;

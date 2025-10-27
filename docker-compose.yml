@@ -1,4 +1,5 @@
 services:
+  # Student database
   student-db:
     image: postgres:15
     container_name: student-db
@@ -13,6 +14,7 @@ services:
     networks:
       - microservices-net
 
+  # Student profile service
   student-profile:
     build: ./student-profile
     container_name: student-profile
@@ -23,9 +25,72 @@ services:
       - student-db
     ports:
       - "5001:5001"
+    command: ["./wait-for-it.sh", "student-db", "5432", "python", "app.py"]  
     networks:
       - microservices-net
 
+  # Course catalogue database for course catalogue microservice
+  course-db:
+    image: postgres:15
+    container_name: course-db
+    environment:
+      POSTGRES_USER: course
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: courses
+    ports:
+      - "5433:5432" #External to Internal, host:container
+    volumes:
+      - ./course-catalogue/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - microservices-net
+
+  # Course catalogue microservice
+  course-catalogue:
+    build: ./course-catalogue
+    container_name: course-catalogue
+    environment:
+      DATABASE_URL: postgresql://course:password@course-db:5432/courses
+      FLASK_ENV: development
+    depends_on:
+      - course-db
+    ports:
+      - "5002:5002"
+    command: ["./wait-for-it.sh", "course-db", "5432", "python", "app.py"]  
+    networks:
+      - microservices-net
+
+  # Course feedback database for course-feedback microservice
+  feedback-db:
+    image: postgres:15
+    container_name: feedback-db
+    environment:
+      POSTGRES_USER: feedback
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: feedbacks
+    ports:
+      - "5434:5432" #External to Internal
+    volumes:
+      - ./course-feedback/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - microservices-net
+
+  # Course feedback service
+  course-feedback:
+    build: ./course-feedback
+    container_name: course-feedback
+    environment:
+      DATABASE_URL: postgresql://feedback:password@feedback-db:5432/feedbacks
+      FLASK_ENV: development
+    depends_on:
+      - feedback-db
+      - course-catalogue
+    ports:
+      - "5003:5003"
+    command: ["./wait-for-it.sh", "feedback-db", "5432", "python", "app.py"]
+    networks:
+      - microservices-net
+    
+  # React admin frontend
   admin-frontend:
     build: ./frontend
     container_name: frontend
@@ -41,17 +106,20 @@ services:
     networks:
       - microservices-net
 
+  # Adminer database browser
   adminer:
     image: adminer
     container_name: adminer
     restart: always
     ports:
-      - 9090:8080
+      - "9090:8080"
     depends_on:
       - student-db
+      - course-db
+      - feedback-db
     networks:
       - microservices-net
-
+     
 networks:
   microservices-net:
     driver: bridge
